@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalPass - Simple Password Manager</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --primary-dark: #7c3aed;
+            --secondary: #06b6d4;
+            --secondary-light: #22d3ee;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            --gradient-dark: linear-gradient(135deg, #7c3aed 0%, #0891b2 100%);
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header & Navigation */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--dark-light);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            padding: 1rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger:hover {
+            background: var(--glass);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background: var(--dark-light);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            z-index: 1001;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-items {
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            color: var(--light);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--glass);
+        }
+
+        .nav-item.active {
+            background: var(--glass);
+            border-left-color: var(--primary);
+            color: var(--primary-light);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            width: 24px;
+        }
+
+        .install-btn {
+            margin: 1rem 2rem;
+            padding: 0.75rem;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+            padding: 2rem;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-icon {
+            font-size: 2rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        /* Password List */
+        .passwords-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .password-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .password-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+
+        .password-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient);
+        }
+
+        .password-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .password-website {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .password-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .password-username {
+            color: var(--gray);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .password-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .password-display.masked {
+            color: var(--gray);
+            letter-spacing: 4px;
+        }
+
+        .password-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--gray);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        /* About Section */
+        .warning-banner {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border-left: 6px solid #fbbf24;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .warning-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .passwords-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .password-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .password-actions {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🔐</span>
+                <span class="logo-text">LocalPass</span>
+            </div>
+            <button class="hamburger" id="hamburger">
+                ☰
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🔐</span>
+                <span class="logo-text">LocalPass</span>
+            </div>
+        </div>
+        
+        <div class="nav-items">
+            <a href="#" class="nav-item active" data-page="add-password">
+                <span class="nav-icon">➕</span>
+                <span>Add Password</span>
+            </a>
+            <a href="#" class="nav-item" data-page="saved-passwords">
+                <span class="nav-icon">📋</span>
+                <span>Saved Passwords</span>
+            </a>
+            <a href="#" class="nav-item" data-page="about">
+                <span class="nav-icon">ℹ️</span>
+                <span>About & Security</span>
+            </a>
+        </div>
+
+        <button class="install-btn" id="installBtn" style="display: none;">
+            <span>📱</span>
+            <span>Install App</span>
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Add Password Page -->
+        <div class="page active" id="add-password">
+            <div class="card">
+                <h2 class="section-title">
+                    <span class="section-icon">➕</span>
+                    Add New Password
+                </h2>
+                
+                <div class="form-group">
+                    <label class="form-label" for="website">Website/App Name</label>
+                    <input type="text" id="website" class="form-input" 
+                           placeholder="e.g., Netflix, Twitter, GitHub">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="username">Username/Email</label>
+                    <input type="text" id="username" class="form-input" 
+                           placeholder="Your login email or username">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-input" 
+                           placeholder="Your password">
+                </div>
+                
+                <button class="btn" onclick="addPassword()">
+                    <span>💾</span>
+                    Save Password
+                </button>
+            </div>
+        </div>
+
+        <!-- Saved Passwords Page -->
+        <div class="page" id="saved-passwords">
+            <div class="card">
+                <h2 class="section-title">
+                    <span class="section-icon">📋</span>
+                    Your Passwords
+                </h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPasswords">0</div>
+                        <div class="stat-label">Passwords Saved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lastUpdated">0</div>
+                        <div class="stat-label">Days Since Backup</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lastAdded">0</div>
+                        <div class="stat-label">Last Added (days)</div>
+                    </div>
+                </div>
+                
+                <div class="passwords-grid" id="passwordsList">
+                    <!-- Passwords will be dynamically inserted here -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button class="btn btn-danger" onclick="deleteAllPasswords()">
+                        <span>🗑️</span>
+                        Delete All Passwords
+                    </button>
+                    <button class="btn btn-warning" onclick="exportPasswords()" style="margin-left: 1rem;">
+                        <span>📤</span>
+                        Export as Text
+                    </button>
+                    <button class="btn btn-success" onclick="generatePassword()" style="margin-left: 1rem;">
+                        <span>🔧</span>
+                        Generate Password
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Page -->
+        <div class="page" id="about">
+            <div class="warning-banner">
+                <div class="warning-icon">⚠️</div>
+                <h3>🔴 CRITICAL SECURITY WARNING</h3>
+                <p><strong>This app stores passwords in your browser's localStorage.</strong></p>
+                <p>This is <strong>NOT SECURE</strong> for:</p>
+                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>Bank passwords</li>
+                    <li>Email accounts</li>
+                    <li>Social media accounts</li>
+                    <li>Any sensitive information</li>
+                </ul>
+                <p style="margin-top: 1rem; color: #fbbf24;">
+                    <strong>USE ONLY FOR:</strong> Streaming sites, forum logins, game accounts - <strong>NOTHING IMPORTANT!</strong>
+                </p>
+            </div>
+            
+            <div class="card">
+                <h2 class="section-title">
+                    <span class="section-icon">ℹ️</span>
+                    About LocalPass
+                </h2>
+                
+                <div style="color: var(--gray); line-height: 1.8;">
+                    <p><strong>How This Works:</strong></p>
+                    <p>• Passwords are stored in your browser's localStorage</p>
+                    <p>• They stay ONLY on this device</p>
+                    <p>• Clearing browser data = passwords gone forever</p>
+                    <p>• No encryption = anyone can read them</p>
+                    
+                    <p style="margin-top: 1.5rem; color: var(--warning);">
+                        <strong>Recommended for:</strong> Tracking passwords for free streaming sites, 
+                        game accounts, forum logins, and other non-critical accounts.
+                    </p>
+                    
+                    <p style="margin-top: 1.5rem;">
+                        <strong>Need real security?</strong> Use <a href="#" style="color: var(--primary-light); font-weight: 600;" onclick="showSecureAlternatives()">Bitwarden (free)</a> or 
+                        <a href="#" style="color: var(--primary-light); font-weight: 600;" onclick="showSecureAlternatives()">1Password</a>
+                    </p>
+                </div>
+                
+                <div class="features-grid" style="margin-top: 2rem;">
+                    <div class="feature-card">
+                        <div class="feature-icon">📱</div>
+                        <h3>PWA Ready</h3>
+                        <p>Install as a native app on your device</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💾</div>
+                        <h3>Local Storage</h3>
+                        <p>Everything stays on your device</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Fast & Simple</h3>
+                        <p>No accounts, no sync, just works</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        Password saved successfully!
+    </div>
+
+    <script>
+        // Initialize deferredPrompt for PWA
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+
+        // PWA Install Prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex';
+            
+            installBtn.addEventListener('click', () => {
+                installBtn.style.display = 'none';
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted install');
+                    } else {
+                        console.log('User dismissed install');
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+            showNotification('App installed successfully! 🎉');
+        });
+
+        // Navigation
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
+
+        hamburger.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('open');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        });
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = item.getAttribute('data-page');
+                
+                // Update active nav item
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Show selected page
+                pages.forEach(page => page.classList.remove('active'));
+                document.getElementById(pageId).classList.add('active');
+                
+                // Close sidebar on mobile
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.classList.remove('open');
+                }
+                
+                // If going to saved passwords, render them
+                if (pageId === 'saved-passwords') {
+                    renderPasswords();
+                }
+            });
+        });
+
+        // Password Manager Logic
+        class LocalPasswordVault {
+            constructor() {
+                this.passwords = this.loadPasswords();
+                this.renderPasswords();
+                this.updateStats();
+            }
+
+            loadPasswords() {
+                const saved = localStorage.getItem('localPassVault');
+                if (saved) {
+                    try {
+                        return JSON.parse(saved);
+                    } catch {
+                        return [];
+                    }
+                }
+                return [];
+            }
+
+            savePasswords() {
+                localStorage.setItem('localPassVault', JSON.stringify(this.passwords));
+                this.updateStats();
+            }
+
+            addPassword(website, username, password) {
+                if (!website || !password) {
+                    this.showNotification('Please fill in website and password', 'warning');
+                    return false;
+                }
+
+                const id = Date.now().toString();
+                
+                this.passwords.push({
+                    id: id,
+                    website: website.trim(),
+                    username: username.trim(),
+                    password: password,
+                    created: new Date().toISOString(),
+                    lastModified: new Date().toISOString()
+                });
+
+                this.savePasswords();
+                this.renderPasswords();
+                this.showNotification(`Password for ${website} saved successfully!`);
+                
+                // Clear form
+                document.getElementById('website').value = '';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                
+                return true;
+            }
+
+            deletePassword(id) {
+                if (confirm('Are you sure? This cannot be undone!')) {
+                    this.passwords = this.passwords.filter(p => p.id !== id);
+                    this.savePasswords();
+                    this.renderPasswords();
+                    this.showNotification('Password deleted');
+                }
+            }
+
+            deleteAllPasswords() {
+                if (confirm('⚠️ DELETE ALL PASSWORDS? This cannot be undone!')) {
+                    this.passwords = [];
+                    this.savePasswords();
+                    this.renderPasswords();
+                    this.showNotification('All passwords deleted', 'danger');
+                }
+            }
+
+            togglePasswordVisibility(id) {
+                const passwordElement = document.querySelector(`[data-id="${id}"] .password-display`);
+                const button = document.querySelector(`[data-id="${id}"] .toggle-btn .btn-text`);
+                
+                if (passwordElement.classList.contains('masked')) {
+                    const password = this.passwords.find(p => p.id === id).password;
+                    passwordElement.textContent = password;
+                    passwordElement.classList.remove('masked');
+                    button.textContent = 'Hide';
+                } else {
+                    passwordElement.textContent = '••••••••';
+                    passwordElement.classList.add('masked');
+                    button.textContent = 'Show';
+                }
+            }
+
+            copyToClipboard(text, type) {
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showNotification(`${type} copied to clipboard!`);
+                });
+            }
+
+            renderPasswords() {
+                const container = document.getElementById('passwordsList');
+                
+                if (this.passwords.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🔒</div>
+                            <h3>No passwords saved yet</h3>
+                            <p style="margin-top: 1rem;">Add your first password above (remember: NOT for important accounts!)</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+                
+                this.passwords.forEach(password => {
+                    const passwordElement = document.createElement('div');
+                    passwordElement.className = 'password-card';
+                    passwordElement.setAttribute('data-id', password.id);
+                    
+                    const createdDate = new Date(password.created);
+                    const daysAgo = Math.floor((Date.now() - createdDate) / (1000 * 60 * 60 * 24));
+                    
+                    passwordElement.innerHTML = `
+                        <div class="password-header">
+                            <div class="password-website">🌐 ${password.website}</div>
+                            <div class="password-actions">
+                                <button class="action-btn toggle-btn" title="Toggle visibility">
+                                    <span class="btn-text">Show</span>
+                                </button>
+                                <button class="action-btn" title="Copy username">
+                                    👤
+                                </button>
+                                <button class="action-btn" title="Copy password">
+                                    📋
+                                </button>
+                                <button class="action-btn" title="Delete password">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div class="password-username">${password.username || 'No username'}</div>
+                        <div class="password-display masked">••••••••</div>
+                        <div class="password-meta">
+                            <span>Added: ${daysAgo} days ago</span>
+                            <span>ID: ${password.id.substring(0, 8)}</span>
+                        </div>
+                    `;
+                    
+                    // Add event listeners
+                    const toggleBtn = passwordElement.querySelector('.toggle-btn');
+                    const userBtn = passwordElement.querySelector('.action-btn:nth-child(2)');
+                    const passBtn = passwordElement.querySelector('.action-btn:nth-child(3)');
+                    const deleteBtn = passwordElement.querySelector('.action-btn:nth-child(4)');
+                    
+                    toggleBtn.addEventListener('click', () => this.togglePasswordVisibility(password.id));
+                    userBtn.addEventListener('click', () => this.copyToClipboard(password.username, 'Username'));
+                    passBtn.addEventListener('click', () => this.copyToClipboard(password.password, 'Password'));
+                    deleteBtn.addEventListener('click', () => this.deletePassword(password.id));
+                    
+                    container.appendChild(passwordElement);
+                });
+            }
+
+            updateStats() {
+                document.getElementById('totalPasswords').textContent = this.passwords.length;
+                
+                // Calculate days since last backup
+                const lastBackup = localStorage.getItem('lastBackup');
+                if (lastBackup && this.passwords.length > 0) {
+                    const days = Math.floor((Date.now() - parseInt(lastBackup)) / (1000 * 60 * 60 * 24));
+                    document.getElementById('lastUpdated').textContent = days;
+                } else {
+                    document.getElementById('lastUpdated').textContent = 'Never';
+                }
+                
+                // Calculate days since last added password
+                if (this.passwords.length > 0) {
+                    const lastAdded = new Date(this.passwords[0].created);
+                    const daysSince = Math.floor((Date.now() - lastAdded) / (1000 * 60 * 60 * 24));
+                    document.getElementById('lastAdded').textContent = daysSince;
+                } else {
+                    document.getElementById('lastAdded').textContent = 'N/A';
+                }
+            }
+
+            exportPasswords() {
+                if (this.passwords.length === 0) {
+                    this.showNotification('No passwords to export', 'warning');
+                    return;
+                }
+
+                let exportText = '⚠️ WARNING: These passwords are stored in plain text in your browser!\n';
+                exportText += '⚠️ They are NOT securely encrypted!\n';
+                exportText += '⚠️ Use only for non-critical accounts!\n\n';
+                exportText += '=== LOCALPASS PASSWORD EXPORT ===\n';
+                exportText += `Export Date: ${new Date().toLocaleString()}\n`;
+                exportText += `Total Passwords: ${this.passwords.length}\n\n`;
+                
+                this.passwords.forEach((p, i) => {
+                    exportText += `[${i + 1}] ${p.website}\n`;
+                    exportText += `   Username: ${p.username}\n`;
+                    exportText += `   Password: ${p.password}\n`;
+                    exportText += `   Added: ${new Date(p.created).toLocaleDateString()}\n\n`;
+                });
+
+                const blob = new Blob([exportText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `localpass-backup-${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                localStorage.setItem('lastBackup', Date.now().toString());
+                this.updateStats();
+                
+                this.showNotification('Passwords exported to text file');
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                
+                if (type === 'warning') {
+                    notification.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                } else if (type === 'danger') {
+                    notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                } else if (type === 'success') {
+                    notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                }
+                
+                notification.classList.add('show');
+                setTimeout(() => notification.classList.remove('show'), 3000);
+            }
+        }
+
+        // Global functions
+        function addPassword() {
+            const website = document.getElementById('website').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            vault.addPassword(website, username, password);
+        }
+
+        function deleteAllPasswords() {
+            vault.deleteAllPasswords();
+        }
+
+        function exportPasswords() {
+            vault.exportPasswords();
+        }
+
+        function generatePassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            document.getElementById('password').value = password;
+            vault.showNotification('Password generated!');
+        }
+
+        function showSecureAlternatives() {
+            alert('🔒 Secure Password Managers:\n\n1. Bitwarden (Free)\n   - Open source\n   - End-to-end encryption\n   - Syncs across devices\n\n2. 1Password (Paid)\n   - Excellent security\n   - User friendly\n   - Family plans available\n\n3. LastPass (Freemium)\n   - Free for one device type\n   - Good features\n\nPlease consider using these instead!');
+        }
+
+        // Initialize the vault
+        const vault = new LocalPasswordVault();
+
+        // Make available globally for debugging
+        window.vault = vault;
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportPasswords();
+            }
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                navItems.forEach(nav => nav.classList.remove('active'));
+                navItems[0].classList.add('active');
+                pages.forEach(page => page.classList.remove('active'));
+                document.getElementById('add-password').classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
